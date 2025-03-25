@@ -1,0 +1,136 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "t9rag"
+dynamic = ["version", "readme"]
+description = 'A properly modeled text rag.'
+requires-python = ">=3.12"
+license = {"text" = "In house" }
+keywords = []
+authors = [
+  { name = "Rune Hansén Steinnes-Westum", email = "rune.steinnes@westum.no" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "chromadb",
+    "sentence-transformers",
+    "click",
+    "python-docx",
+    "odfpy",
+    "PyPDF2",
+    "pandas",
+    "llama-index-llms-ollama",
+    "llama-index-core",
+    "llama-index-embeddings-huggingface",
+    "llama-index-llms-huggingface-api"
+]
+[tool.setuptool]
+packages = ["t9rag"]
+
+[tool.setuptools.packages.find]
+where = ["src"]  # list of folders that contain the packages (["."] by default)
+include = ["t9rag*"]  # package names should match these glob patterns (["*"] by default)
+exclude = [""]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+[tool.setuptools.dynamic]
+version = {attr = "t9rag.__version__"}  # any module attribute compatible with ast.literal_eval
+readme = {file = ["README.md", "USAGE.rst"]}
+
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "pynvim",
+    "neovim",
+    "mypy",
+    "setuptools",
+    "setuptools-scm"
+]
+
+[project.urls]
+Documentation = "https://github.com/roderik333/t9rag#readme"
+Issues = "https://github.com/roderik333/t9rag/issues"
+Source = "https://github.com/roderik333/t9rag"
+
+[project.scripts]
+rag = "t9rag.main:cli"
+
+
+[tool.ruff]
+extend-select = ["A", "B", "C4", "D", "I", "ERA", "PLR", "SIM", "TCH"]
+ignore = [
+    "D101",
+    "D102",
+    "D103",
+    "D107",
+    "D202",
+    "D400",
+    "D401",
+    "D406",
+    "D407",
+    "D412",
+    "D417",
+]
+show-fixes = true
+line-length = 119
+
+[tool.mypy]
+python_version = "3.13"
+disallow_untyped_defs = true
+show_error_codes = true
+show_column_numbers = true
+warn_return_any = true
+warn_unused_ignores = true
+warn_unreachable = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+pretty = true
+exclude = ["scripts", "docs", "test"]
+
+[tool.basedpyright]
+venvPath = "."
+include = ["src"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/@python2",
+    "stubs/enum34",
+    "stubs/futures",
+    "stubs/ipaddress",
+]
+ignore = []
+defineConstant = { DEBUG = true }
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+typeCheckingMode = "standard"
+# Add stuff that is different from standard.. easier than to subtract from all.
+reportAny = false
+reportMissingImports = true
+strictListInference = true
+strictDictionaryInference = true
+deprecateTypingAliases = true               # < 3.9
+reportCallIssue = false
+reportUnusedClass = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "error"
+reportUntypedBaseClass = "error"
+reportUntypedNamedTuple = "error"
+reportPrivateUsage = "error"
+reportConstantRedefinition = "error"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "none"
+reportMissingSuperCall = "error"
+reportUnusedImport = "error"

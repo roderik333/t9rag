@@ -45,8 +45,8 @@ rag read-documents --directory ./documents --model-name NbAiLab/nb-bert-large --
 
 ### Asking questions
 
-```
-rag ask --query "Your question here" --model NbAiLab/nb-bert-large --db-directory ./chroma_db --llm-model llama3.2 --context-window 4096 --verbose
+```bash
+rag ask --llm-model "llama3.2" --llm-base-url "http://87.238.55.118:11434/" --verbose --query "something or other"
 ```
 
 This command allows you to ask questions based on the processed documents. It retrieves relevant context, generates a response using the LLM, and displays the answer.
