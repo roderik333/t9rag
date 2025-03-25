@@ -3,28 +3,28 @@
 import click
 from llama_index.llms.ollama import Ollama
 
-DEFAULT_CONTEXT_WINDOW = 2048
 
-
-def initialize_llm(
-    model_name: str = "llama3.2",
-    timeout=600,
-    base_url: str = "http://localhost:11434",
-    context_window: int = DEFAULT_CONTEXT_WINDOW,
-    verbose: bool = False,
+def initialize_llm(  # noqa [PLR0913]
+    model_name: str,
+    timeout: int,
+    base_url: str,
+    context_window: int,
+    verbose: bool,
+    max_tokens: int,
+    temperature: float,
+    top_p: float,
 ) -> Ollama | None:
     try:
         initialized_llm = Ollama(
             model=model_name,
             request_timeout=timeout,
             base_url=base_url,
+            context_window=context_window,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
         )
-        if context_window != DEFAULT_CONTEXT_WINDOW:
-            initialized_llm.context_window = context_window
-            click.secho(
-                f"Updated Ollama context window to {context_window}",
-                fg="yellow",
-            )
+
         if verbose:
             click.secho(
                 f"Initialized Ollama LLM with context window size {initialized_llm.context_window}",
