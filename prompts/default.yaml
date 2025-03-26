@@ -1,0 +1,17 @@
+ask:
+  model: "NbAiLab/nb-bert-large"
+  db_directory: "./chroma_db"
+  llm_model: "llama3.2"
+  llm_base_url: "http://localhost:11434"
+  llm_timeout: 300
+  context_window: 3090
+  verbose: false
+  llm_max_tokens: 1024
+  llm_temperature: 0.3
+  llm_top_p: 0.5
+  n_results: 5
+
+prompts:
+  default: "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:"
+  concise: "Given this context:\n{context}\nBriefly answer: {query}\n\nAnswer:"
+  detailed: "Analyze the following information:\n{context}\nProvide a detailed answer to this question: {query}\n\nAnswer:"
