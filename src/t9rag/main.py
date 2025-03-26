@@ -1,12 +1,12 @@
 """Where the magic happens."""
 
-import json
 import sys
 from pathlib import Path
-from typing import TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 
 import chromadb
 import click
+import yaml
 
 from .__version__ import __version__
 from .document_reader import load_documents
@@ -15,31 +15,25 @@ from .ollama_llm import initialize_llm, stream_complete
 from .vector_store import DocumentDict, VectorStore
 
 
-def get_prompt(prompt_key: str) -> str:
-    DEFAULT_PROMPT = "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:"
-    prompts_file = Path("prompts.json")
+def load_config(config_file: str) -> dict[str, Any]:
+    with open(config_file, "r") as f:
+        return yaml.safe_load(f)
 
-    if not prompts_file.exists():
-        # Create prompt.json with default prompt if it doesn't exist
-        with open(prompts_file, "w") as f:
-            json.dump({"default": DEFAULT_PROMPT}, f, indent=2)
-        click.secho("Created prompt.json with default prompt for key 'default'", fg="green")
-        return DEFAULT_PROMPT
 
-    with open(prompts_file, "r") as f:
-        prompts = json.load(f)
-
-    if not prompt_key:
-        return DEFAULT_PROMPT
-
+def get_prompt(prompt_key: str, config: dict[str, Any]) -> str:
+    prompts = config.get("prompts", {})
     if prompt_key in prompts:
         return prompts[prompt_key]
     else:
-        click.secho(f"Prompt key '{prompt_key}' not found in prompt.json. Using default prompt.", fg="yellow")
-        return DEFAULT_PROMPT
+        click.secho(f"Prompt key '{prompt_key}' not found in config. Using default prompt.", fg="yellow")
+        return prompts.get(
+            "default",
+            "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:",
+        )
 
 
 class AskOptions(TypedDict):
+    config: str
     query: str
     model: str
     db_directory: str
@@ -78,7 +72,15 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
 
 @click.command(help="Ask a question using the RAG system.")
 @click.option(
-    "--prompt", default="default", help="The key to the prompt value stored in prompts.json", show_default=True
+    "--config",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help="Path to the configuration file.",
+)
+@click.option(
+    "--prompt",
+    default="default",
+    help="The key to the prompt value stored in the configuration file",
+    show_default=True,
 )
 @click.option("--query", prompt="Enter your question", help="The question to ask the RAG system", show_default=True)
 @click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
@@ -96,7 +98,21 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
 @click.option(
     "--n-results", default=5, help="When querying the vector store, how many of results to return", show_default=True
 )
-def ask(**options: Unpack[AskOptions]) -> None:
+@click.pass_context
+def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
+    if options.get("config"):
+        # If config is passed in, the values in config take precedence over CLI options
+        # unless an option is explicitly provided
+        ctx_dict = {item.name: item.default for item in ctx.command.params}
+        config = load_config(options["config"])
+        ask_config = config.get("ask", {})
+        for key, value in ask_config.items():
+            default_value = ctx_dict.get(key)
+            if default_value is None or options[key] == default_value:
+                options[key] = value
+    else:
+        config = {"prompts": {}}
+
     embedding_model = EmbeddingModel(model=get_sentencetransformer(options["model"]))
     vector_store = VectorStore(client=chromadb.PersistentClient(path=options["db_directory"]))
 
@@ -110,7 +126,6 @@ def ask(**options: Unpack[AskOptions]) -> None:
         "temperature": options["llm_temperature"],
         "top_p": options["llm_top_p"],
     }
-
     llm = initialize_llm(
         **_llm_options,  # type: ignore[arg-type]
     )
@@ -123,7 +138,7 @@ def ask(**options: Unpack[AskOptions]) -> None:
     results = vector_store.query(query_embedding, n_results=options["n_results"])
 
     context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
-    prompt_template = get_prompt(options["prompt"])
+    prompt_template = get_prompt(options["prompt"], config or {})
     prompt = prompt_template.format(context=context, query=options["query"])
 
     click.secho(f"Question: {options['query']}", fg="green")

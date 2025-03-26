@@ -86,6 +86,7 @@ rag ask --help
 Usage: rag ask [OPTIONS]
 
 Options:
+  --config FILE             Path to the configuration file.
   --prompt TEXT             The key to the prompt value stored in prompts.json
                             [default: default]
   --query TEXT              The question to ask the RAG system
@@ -118,6 +119,20 @@ rag read-documents --model-name intfloat/multilingual-e5-large-instruct
 ```
 
 ### Asking questions
+
+- invocation with defaults from configuration file
+
+```bash
+rag ask --config prompts/default.yaml --prompt concise
+```
+
+- invocation with defaults from configuration, file overriding **llm-timeout** on the command line
+
+```bash
+rag ask --config prompts/default.yaml --prompt default --llm-timeout 1200
+```
+
+- invocation without configuration file
 
 ```bash
 rag ask --model intfloat/multilingual-e5-large-instruct \
