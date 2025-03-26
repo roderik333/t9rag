@@ -64,7 +64,6 @@ class ConversationMemory:
 
 class AskOptions(TypedDict):
     config: str
-    query: str
     model: str
     db_directory: str
     llm_model: str
@@ -112,8 +111,6 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
     help="The key to the prompt value stored in the configuration file",
     show_default=True,
 )
-# @click.option("--query", prompt="Enter your question", help="The question to ask the RAG system", show_default=True)
-@click.option("--query", help="The question to ask the RAG system", show_default=True)
 @click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
 @click.option(
     "--db-directory", default="./chroma_db", help="Directory where the vector database is stored", show_default=True
@@ -168,7 +165,14 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
     conversation_memory = ConversationMemory()
 
     while True:
-        query = click.prompt("Enter your question (or 'exit' to quit)")
+        query = click.prompt(
+            "".join(
+                [
+                    click.style("Enter your question ", fg="green"),
+                    click.style("(or 'exit' to quit)", fg="white"),
+                ]
+            )
+        )
         if query.lower() == "exit":
             break
 
@@ -181,7 +185,6 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         prompt_template = get_prompt(options["prompt"], config or {})
         prompt = prompt_template.format(context=context, conversation_history=conversation_history, query=query)
 
-        click.secho(f"Question: {query}", fg="green")
         click.secho("Answer: ", fg="blue", nl=False)
 
         answer = ""
@@ -192,21 +195,6 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         click.echo()
 
         conversation_memory.add_turn(query, answer)
-
-    # query_embedding = embedding_model.embed_text(options["query"])
-    # results = vector_store.query(query_embedding, n_results=options["n_results"])
-    #
-    # context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
-    # prompt_template = get_prompt(options["prompt"], config or {})
-    # prompt = prompt_template.format(context=context, query=options["query"])
-    #
-    # click.secho(f"Question: {options['query']}", fg="green")
-    # click.secho("Answer: ", fg="blue", nl=False)
-    #
-    # for chunk in stream_complete(llm, prompt):
-    #     click.secho(chunk, fg="blue", nl=False)
-    #     sys.stdout.flush()
-    # click.echo()
 
 
 @click.command(help="Show version")
