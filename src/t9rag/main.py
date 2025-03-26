@@ -7,11 +7,10 @@ from typing import TypedDict, Unpack
 
 import chromadb
 import click
-from sentence_transformers import SentenceTransformer
 
 from .__version__ import __version__
 from .document_reader import load_documents
-from .embedding_model import EmbeddingModel
+from .embedding_model import EmbeddingModel, get_sentencetransformer
 from .ollama_llm import initialize_llm, stream_complete
 from .vector_store import DocumentDict, VectorStore
 
@@ -65,7 +64,7 @@ class AskOptions(TypedDict):
 def read_documents(directory: Path, model_name: str, db_directory: str):
     documents: list[DocumentDict] = load_documents(directory)
     click.echo(f"Loaded {len(documents)} documents.")
-    embedding_model = EmbeddingModel(model=SentenceTransformer(model_name))
+    embedding_model = EmbeddingModel(model=get_sentencetransformer(model_name))
     click.secho(f"initializing embedding model: {model_name}", fg="green")
 
     for doc in documents:
@@ -98,7 +97,7 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
     "--n-results", default=5, help="When querying the vector store, how many of results to return", show_default=True
 )
 def ask(**options: Unpack[AskOptions]) -> None:
-    embedding_model = EmbeddingModel(model=SentenceTransformer(options["model"]))
+    embedding_model = EmbeddingModel(model=get_sentencetransformer(options["model"]))
     vector_store = VectorStore(client=chromadb.PersistentClient(path=options["db_directory"]))
 
     _llm_options = {
