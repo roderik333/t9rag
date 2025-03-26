@@ -8,6 +8,15 @@
 
 T9RAG is a powerful and flexible Retrieval Augmented Generation (RAG) system designed to process, embed, and query documents using state-of-the-art language models and vector databases. It combines document processing, embedding generation, vector storage, and language model inference to provide accurate and context-aware responses to user queries.
 
+## Updating
+
+Updating to a new version
+
+```
+(.venv) git pull
+(.venv) pip install --upgrade .
+```
+
 ## Features
 
 - Document processing from various file formats
