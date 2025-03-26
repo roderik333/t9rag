@@ -12,6 +12,37 @@ ask:
   n_results: 5
 
 prompts:
-  default: "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:"
-  concise: "Given this context:\n{context}\nBriefly answer: {query}\n\nAnswer:"
-  detailed: "Analyze the following information:\n{context}\nProvide a detailed answer to this question: {query}\n\nAnswer:"
+  default: |
+    Based on the following context and conversation history, please answer the question:
+
+    Context:
+    {context}
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+
+  concise: |
+    Given this context:
+
+    Context:
+    {context}
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+
+  detailed: |
+    Analyze the following information:
+
+    Context:
+    {context}
+
+    Provide a detailed answer to this question
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
