@@ -1,5 +1,6 @@
 """Where the magic happens."""
 
+import sys
 from pathlib import Path
 from typing import TypedDict, Unpack
 
@@ -7,9 +8,10 @@ import chromadb
 import click
 from sentence_transformers import SentenceTransformer
 
+from .__version__ import __version__
 from .document_reader import load_documents
 from .embedding_model import EmbeddingModel
-from .ollama_llm import initialize_llm
+from .ollama_llm import initialize_llm, stream_complete
 from .vector_store import DocumentDict, VectorStore
 
 
@@ -95,9 +97,18 @@ def ask(**options: Unpack[AskOptions]) -> None:
     context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
     prompt = f"Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {options['query']}\n\nAnswer:"
 
-    response = llm.complete(prompt).text
     click.secho(f"Question: {options['query']}", fg="green")
-    click.secho(f"Answer: {response}", fg="blue")
+    click.secho("Answer: ", fg="blue", nl=False)
+
+    for chunk in stream_complete(llm, prompt):
+        click.secho(chunk, fg="blue", nl=False)
+        sys.stdout.flush()
+    click.echo()
+
+
+@click.command(help="Show version")
+def version() -> None:
+    click.secho(f"t9 RAG CLI v{__version__}", fg="green")
 
 
 @click.group(help="General commands")
@@ -105,5 +116,6 @@ def cli() -> None:
     pass
 
 
+cli.add_command(version)
 cli.add_command(read_documents)
 cli.add_command(ask)

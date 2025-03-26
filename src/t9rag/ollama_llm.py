@@ -1,7 +1,16 @@
 """The Ollama class."""
 
+from collections.abc import Iterator
+
 import click
 from llama_index.llms.ollama import Ollama
+
+
+def stream_complete(llm: Ollama, prompt: str) -> Iterator[str]:
+    response = llm.stream_complete(prompt)
+    for chunk in response:
+        if chunk.delta:
+            yield chunk.delta
 
 
 def initialize_llm(  # noqa [PLR0913]
