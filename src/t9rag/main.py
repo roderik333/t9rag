@@ -1,5 +1,6 @@
 """Where the magic happens."""
 
+import json
 import sys
 from pathlib import Path
 from typing import TypedDict, Unpack
@@ -15,6 +16,30 @@ from .ollama_llm import initialize_llm, stream_complete
 from .vector_store import DocumentDict, VectorStore
 
 
+def get_prompt(prompt_key: str) -> str:
+    DEFAULT_PROMPT = "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:"
+    prompts_file = Path("prompts.json")
+
+    if not prompts_file.exists():
+        # Create prompt.json with default prompt if it doesn't exist
+        with open(prompts_file, "w") as f:
+            json.dump({"default": DEFAULT_PROMPT}, f, indent=2)
+        click.secho("Created prompt.json with default prompt for key 'default'", fg="green")
+        return DEFAULT_PROMPT
+
+    with open(prompts_file, "r") as f:
+        prompts = json.load(f)
+
+    if not prompt_key:
+        return DEFAULT_PROMPT
+
+    if prompt_key in prompts:
+        return prompts[prompt_key]
+    else:
+        click.secho(f"Prompt key '{prompt_key}' not found in prompt.json. Using default prompt.", fg="yellow")
+        return DEFAULT_PROMPT
+
+
 class AskOptions(TypedDict):
     query: str
     model: str
@@ -28,6 +53,7 @@ class AskOptions(TypedDict):
     llm_temperature: float
     llm_top_p: int
     n_results: int
+    prompt: str
 
 
 @click.command()
@@ -51,7 +77,10 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
     click.secho(f"Added documents to vector store at {db_directory}", fg="green")
 
 
-@click.command()
+@click.command(help="Ask a question using the RAG system.")
+@click.option(
+    "--prompt", default="default", help="The key to the prompt value stored in prompts.json", show_default=True
+)
 @click.option("--query", prompt="Enter your question", help="The question to ask the RAG system", show_default=True)
 @click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
 @click.option(
@@ -95,7 +124,8 @@ def ask(**options: Unpack[AskOptions]) -> None:
     results = vector_store.query(query_embedding, n_results=options["n_results"])
 
     context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
-    prompt = f"Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {options['query']}\n\nAnswer:"
+    prompt_template = get_prompt(options["prompt"])
+    prompt = prompt_template.format(context=context, query=options["query"])
 
     click.secho(f"Question: {options['query']}", fg="green")
     click.secho("Answer: ", fg="blue", nl=False)

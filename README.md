@@ -86,6 +86,8 @@ rag ask --help
 Usage: rag ask [OPTIONS]
 
 Options:
+  --prompt TEXT             The key to the prompt value stored in prompts.json
+                            [default: default]
   --query TEXT              The question to ask the RAG system
   --model TEXT              Name of the HuggingFace model  [default:
                             NbAiLab/nb-bert-large]
