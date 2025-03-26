@@ -7,7 +7,7 @@ from typing import Any, TypedDict, Unpack
 import chromadb
 import click
 import yaml
-
+from dataclasses import dataclass, field
 from .__version__ import __version__
 from .document_reader import load_documents
 from .embedding_model import EmbeddingModel, get_sentencetransformer
@@ -30,6 +30,36 @@ def get_prompt(prompt_key: str, config: dict[str, Any]) -> str:
             "default",
             "Based on the following context, please answer the question:\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:",
         )
+
+
+@dataclass
+class ConversationMemory:
+    memory: list[tuple[str, str]] = field(default_factory=list)
+    max_turns: int = field(default=5)
+
+    def add_turn(self, question: str, answer: str):
+        self.memory.append((question, answer))
+        if len(self.memory) > self.max_turns:
+            self.memory.pop(0)
+
+    def get_relevant_history(self, current_query: str, embedding_model: EmbeddingModel) -> str:
+        if not self.memory:
+            return ""
+
+        current_embedding = embedding_model.embed_text(current_query)
+
+        # Calculate similarity scores
+        similarities = []
+        for q, _ in self.memory:
+            q_embedding = embedding_model.embed_text(q)
+            similarity = embedding_model.calculate_similarity(current_embedding, q_embedding)
+            similarities.append(similarity)
+
+        # Select top 2 most similar interactions
+        top_indices = sorted(range(len(similarities)), key=lambda i: similarities[i], reverse=True)[:2]
+
+        relevant_history = "\n".join([f"Q: {self.memory[i][0]}\nA: {self.memory[i][1]}" for i in top_indices])
+        return f"Recent relevant conversation:\n{relevant_history}\n\n"
 
 
 class AskOptions(TypedDict):
@@ -82,7 +112,8 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
     help="The key to the prompt value stored in the configuration file",
     show_default=True,
 )
-@click.option("--query", prompt="Enter your question", help="The question to ask the RAG system", show_default=True)
+# @click.option("--query", prompt="Enter your question", help="The question to ask the RAG system", show_default=True)
+@click.option("--query", help="The question to ask the RAG system", show_default=True)
 @click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
 @click.option(
     "--db-directory", default="./chroma_db", help="Directory where the vector database is stored", show_default=True
@@ -134,20 +165,48 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         click.secho("Failed to initialize Ollama LLM", fg="red")
         return
 
-    query_embedding = embedding_model.embed_text(options["query"])
-    results = vector_store.query(query_embedding, n_results=options["n_results"])
+    conversation_memory = ConversationMemory()
 
-    context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
-    prompt_template = get_prompt(options["prompt"], config or {})
-    prompt = prompt_template.format(context=context, query=options["query"])
+    while True:
+        query = click.prompt("Enter your question (or 'exit' to quit)")
+        if query.lower() == "exit":
+            break
 
-    click.secho(f"Question: {options['query']}", fg="green")
-    click.secho("Answer: ", fg="blue", nl=False)
+        query_embedding = embedding_model.embed_text(query)
+        results = vector_store.query(query_embedding, n_results=options["n_results"])
 
-    for chunk in stream_complete(llm, prompt):
-        click.secho(chunk, fg="blue", nl=False)
-        sys.stdout.flush()
-    click.echo()
+        context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
+        conversation_history = conversation_memory.get_relevant_history(query, embedding_model)
+
+        prompt_template = get_prompt(options["prompt"], config or {})
+        prompt = prompt_template.format(context=context, conversation_history=conversation_history, query=query)
+
+        click.secho(f"Question: {query}", fg="green")
+        click.secho("Answer: ", fg="blue", nl=False)
+
+        answer = ""
+        for chunk in stream_complete(llm, prompt):
+            click.secho(chunk, fg="blue", nl=False)
+            sys.stdout.flush()
+            answer += chunk
+        click.echo()
+
+        conversation_memory.add_turn(query, answer)
+
+    # query_embedding = embedding_model.embed_text(options["query"])
+    # results = vector_store.query(query_embedding, n_results=options["n_results"])
+    #
+    # context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
+    # prompt_template = get_prompt(options["prompt"], config or {})
+    # prompt = prompt_template.format(context=context, query=options["query"])
+    #
+    # click.secho(f"Question: {options['query']}", fg="green")
+    # click.secho("Answer: ", fg="blue", nl=False)
+    #
+    # for chunk in stream_complete(llm, prompt):
+    #     click.secho(chunk, fg="blue", nl=False)
+    #     sys.stdout.flush()
+    # click.echo()
 
 
 @click.command(help="Show version")

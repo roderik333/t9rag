@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+import numpy as np
 import torch
 from chromadb.api.types import Embedding
 from sentence_transformers import SentenceTransformer, models
@@ -24,3 +25,11 @@ class EmbeddingModel:
 
     def embed_text(self, text: str) -> Embedding:
         return self.model.encode([text])[0].tolist()
+
+    def calculate_similarity(self, embedding1: Embedding, embedding2: Embedding) -> float:
+        # Convert to numpy arrays for easier calculation
+        vec1 = np.array(embedding1)
+        vec2 = np.array(embedding2)
+
+        # Calculate cosine similarity
+        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
