@@ -2,6 +2,7 @@
 
 > [!NOTE]
 > This README.md has been (mostly) written by the LLM it self. That's why it is bragging!!
+> ![image](./img/processchart.png "Process flow")
 
 ## Overview
 
@@ -14,6 +15,8 @@ T9RAG is a powerful and flexible Retrieval Augmented Generation (RAG) system des
 - Vector storage and retrieval using ChromaDB
 - Language model inference using Ollama
 - Customizable context window for LLM
+- Customizable LLM temperature, max tokens and top_p
+- Customizable vector database query results
 - Command-line interface for easy interaction
 
 ## Components
