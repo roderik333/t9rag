@@ -1,13 +1,14 @@
 """Where the magic happens."""
 
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TypedDict, Unpack
 
 import chromadb
 import click
 import yaml
-from dataclasses import dataclass, field
+
 from .__version__ import __version__
 from .document_reader import load_documents
 from .embedding_model import EmbeddingModel, get_sentencetransformer
@@ -65,6 +66,7 @@ class ConversationMemory:
 class AskOptions(TypedDict):
     config: str
     model: str
+    conversation: bool
     db_directory: str
     llm_model: str
     llm_base_url: str
@@ -111,6 +113,7 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
     help="The key to the prompt value stored in the configuration file",
     show_default=True,
 )
+@click.option("--conversation", is_flag=True, help="Enable conversation mode", show_default=True)
 @click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
 @click.option(
     "--db-directory", default="./chroma_db", help="Directory where the vector database is stored", show_default=True
@@ -168,7 +171,7 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         query = click.prompt(
             "".join(
                 [
-                    click.style("Enter your question ", fg="green"),
+                    click.style("Enter your question ", fg=config["colors"]["question_text"]),
                     click.style("(or 'exit' to quit)", fg="white"),
                 ]
             )
@@ -185,14 +188,18 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         prompt_template = get_prompt(options["prompt"], config or {})
         prompt = prompt_template.format(context=context, conversation_history=conversation_history, query=query)
 
-        click.secho("Answer: ", fg="blue", nl=False)
+        click.secho("Answer: ", fg=config["colors"]["answer_text"], nl=False)
 
         answer = ""
         for chunk in stream_complete(llm, prompt):
-            click.secho(chunk, fg="blue", nl=False)
+            click.secho(chunk, fg=config["colors"]["answer_text"], nl=False)
             sys.stdout.flush()
             answer += chunk
         click.echo()
+
+        # break out unless a conversation is requested
+        if not options["conversation"]:
+            break
 
         conversation_memory.add_turn(query, answer)
 
