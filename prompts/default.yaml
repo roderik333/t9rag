@@ -1,6 +1,7 @@
 ask:
   model: "NbAiLab/nb-bert-large"
   db_directory: "./chroma_db"
+  conversation: true
   llm_model: "llama3.2"
   llm_base_url: "http://localhost:11434"
   llm_timeout: 300
@@ -8,8 +9,12 @@ ask:
   verbose: false
   llm_max_tokens: 1024
   llm_temperature: 0.3
-  llm_top_p: 0.5
+  llm_top_p: 0.1
   n_results: 5
+
+colors:
+  question_text: "green"
+  answer_text: "blue"
 
 prompts:
   default: |
