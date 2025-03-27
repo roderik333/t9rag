@@ -2,7 +2,8 @@
 
 > [!NOTE]
 > This README.md has been (mostly) written by the LLM it self. That's why it is bragging!!
-> ![image](./img/processchart.png "Process flow")
+
+![image](./img/processchart.png "Process flow")
 
 ## Overview
 
@@ -89,7 +90,7 @@ Options:
   --config FILE             Path to the configuration file.
   --prompt TEXT             The key to the prompt value stored in prompts.json
                             [default: default]
-  --query TEXT              The question to ask the RAG system
+  --conversation            Enable conversation mode
   --model TEXT              Name of the HuggingFace model  [default:
                             NbAiLab/nb-bert-large]
   --db-directory TEXT       Directory where the vector database is stored
