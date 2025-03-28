@@ -59,7 +59,7 @@ def initialize_llm(  # noqa [PLR0913]
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
-            num_gpu=num_gpu,  # Add this parameter
+            num_gpu=num_gpu if num_gpu >= 0 else None,  # Add this parameter
         )
 
         if verbose:
