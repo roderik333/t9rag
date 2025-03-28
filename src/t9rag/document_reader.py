@@ -7,7 +7,7 @@ import pandas as pd
 from docx import Document
 from odf import teletype, text
 from odf.opendocument import load as load_odt
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from .vector_store import DocumentDict
 
