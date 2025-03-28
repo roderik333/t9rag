@@ -1,5 +1,5 @@
 ask:
-  model: "NbAiLab/nb-bert-large"
+  model: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
   db_directory: "./chroma_db"
   conversation: true
   llm_model: "llama3.2"
@@ -11,6 +11,7 @@ ask:
   llm_temperature: 0.3
   llm_top_p: 0.1
   n_results: 5
+  num_gpu: 1
 
 colors:
   question_text: "green"

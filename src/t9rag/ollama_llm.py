@@ -1,5 +1,6 @@
 """The Ollama class."""
 
+import contextlib
 from collections.abc import Iterator
 
 import click
@@ -13,6 +14,31 @@ def stream_complete(llm: Ollama, prompt: str) -> Iterator[str]:
             yield chunk.delta
 
 
+def get_gpu_info():
+    """Get GPU information if available.
+
+    (this is stackoverflow code.. hope it works)
+
+    """
+    try:
+        import pynvml
+
+        pynvml.nvmlInit()
+        device_count = pynvml.nvmlDeviceGetCount()
+        if device_count > 0:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            return f"Total GPU memory: {info.total / 1e9:.2f} GB, Used: {info.used / 1e9:.2f} GB, Free: {info.free / 1e9:.2f} GB"
+        return None
+    except ImportError:
+        return "pynvml not installed. Cannot retrieve GPU information."
+    except Exception as e:
+        return f"Error retrieving GPU information: {str(e)}"
+    finally:
+        with contextlib.suppress(Exception):
+            pynvml.nvmlShutdown()
+
+
 def initialize_llm(  # noqa [PLR0913]
     model_name: str,
     timeout: int,
@@ -22,6 +48,7 @@ def initialize_llm(  # noqa [PLR0913]
     max_tokens: int,
     temperature: float,
     top_p: float,
+    num_gpu: int = -1,  # Add this parameter
 ) -> Ollama | None:
     try:
         initialized_llm = Ollama(
@@ -32,6 +59,7 @@ def initialize_llm(  # noqa [PLR0913]
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
+            num_gpu=num_gpu,  # Add this parameter
         )
 
         if verbose:
@@ -39,10 +67,18 @@ def initialize_llm(  # noqa [PLR0913]
                 f"Initialized Ollama LLM with context window size {initialized_llm.context_window}",
                 fg="green",
             )
+
+            # Check GPU usage
+            gpu_info = get_gpu_info()
+            if gpu_info:
+                click.secho(f"GPU in use: {gpu_info}", fg="green")
+            else:
+                click.secho("No GPU detected or in use", fg="yellow")
+
         return initialized_llm
-    except Exception:
+    except Exception as e:
         click.secho(
-            f"Make sure Ollama is running and the model is downloaded. Run 'ollama pull {model_name}' if needed.",
+            f"Error initializing Ollama: {str(e)}. Make sure Ollama is running and the model is downloaded. Run 'ollama pull {model_name}' if needed.",
             fg="red",
         )
         return None

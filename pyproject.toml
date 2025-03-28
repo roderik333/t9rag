@@ -29,12 +29,15 @@ dependencies = [
     "click",
     "python-docx",
     "odfpy",
-    "PyPDF2",
+    "pypdf",
+    "customtkinter",
+    "pillow",
     "pandas",
     "llama-index-llms-ollama",
     "llama-index-core",
     "llama-index-embeddings-huggingface",
-    "llama-index-llms-huggingface-api"
+    "llama-index-llms-huggingface-api",
+    "pynvml",
 ]
 [tool.setuptool]
 packages = ["t9rag"]

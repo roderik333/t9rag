@@ -108,6 +108,7 @@ Options:
   --llm-top-p FLOAT         Top-p for the Ollama LLM  [default: 0.5]
   --n-results INTEGER       When querying the vector store, how many of
                             results to return  [default: 5]
+  --num-gpu                 Number of GPUs to use for Ollama LLM
   --help                    Show this message and exit.
 ```
 

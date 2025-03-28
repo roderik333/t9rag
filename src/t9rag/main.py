@@ -78,6 +78,7 @@ class AskOptions(TypedDict):
     llm_top_p: int
     n_results: int
     prompt: str
+    num_gpu: int
 
 
 @click.command()
@@ -129,6 +130,7 @@ def read_documents(directory: Path, model_name: str, db_directory: str):
 @click.option(
     "--n-results", default=5, help="When querying the vector store, how many of results to return", show_default=True
 )
+@click.option("--num-gpu", default=0, help="Number of GPUs to use for Ollama LLM", show_default=True)
 @click.pass_context
 def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
     if options.get("config"):
@@ -156,6 +158,7 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         "max_tokens": options["llm_max_tokens"],
         "temperature": options["llm_temperature"],
         "top_p": options["llm_top_p"],
+        "num_gpu": options["num_gpu"],
     }
     llm = initialize_llm(
         **_llm_options,  # type: ignore[arg-type]
