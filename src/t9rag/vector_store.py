@@ -12,6 +12,7 @@ class DocumentDict(TypedDict):
     filename: str
     content: str
     embedding: Embedding
+    metadata: dict
 
 
 @dataclass
@@ -26,13 +27,13 @@ class VectorStore:
     def add_documents(self, documents: list[DocumentDict]):
         ids = [doc["filename"] for doc in documents]
         embeddings: list[Embedding] = [doc["embedding"] for doc in documents]
-        metadatas: list[Metadata] = [{"filename": doc["filename"]} for doc in documents]
+        metadata: list[Metadata] = [doc["metadata"] for doc in documents]
         texts = [doc["content"] for doc in documents]
 
         self.collection.add(
             ids=ids,
             embeddings=embeddings,
-            metadatas=metadatas,
+            metadatas=metadata,
             documents=texts,
         )
 

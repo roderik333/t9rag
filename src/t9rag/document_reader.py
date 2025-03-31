@@ -12,7 +12,18 @@ from pypdf import PdfReader
 from .vector_store import DocumentDict
 
 
-def load_documents(directory: Path) -> list[DocumentDict]:
+def chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start = end - chunk_overlap
+    return chunks
+
+
+def load_documents(directory: Path, chunk_size: int, chunk_overlap: int) -> list[DocumentDict]:
     documents = []
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
@@ -36,6 +47,18 @@ def load_documents(directory: Path) -> list[DocumentDict]:
         else:
             continue  # Skip unsupported file types
 
-        documents.append({"filename": filename, "content": content})
+        chunks = chunk_text(content, chunk_size, chunk_overlap)
+        for i, chunk in enumerate(chunks):
+            documents.append(
+                {
+                    "filename": f"{filename}_chunk_{i}",
+                    "content": chunk,
+                    "metadata": {
+                        "original_file": f"{filepath}",
+                        "chunk_index": i,
+                    },
+                }
+            )
+        # documents.append({"filename": filename, "content": content})
 
     return documents
