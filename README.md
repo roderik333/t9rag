@@ -94,8 +94,8 @@ Usage: rag ask [OPTIONS]
 
 Options:
   --config FILE                 Path to the configuration file.
-  --prompt TEXT                 The key to the prompt value stored in prompts.json
-                                [default: default]
+  --prompt TEXT                 The key to the prompt value stored in the configuration
+                                file [default: default]
   --conversation                Enable conversation mode
   --model TEXT                  Name of the HuggingFace model  [default:
                                 NbAiLab/nb-bert-large]

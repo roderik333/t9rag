@@ -3,7 +3,7 @@
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, TypedDict, TypeVar, Unpack, cast, reveal_type
+from typing import Any, TypedDict, TypeVar, Unpack, cast
 
 import chromadb
 import click
@@ -303,67 +303,3 @@ def cli() -> None:
 cli.add_command(version)
 cli.add_command(read_documents)
 cli.add_command(ask)
-
-
-"""
-
-from .embedding_model import EmbeddingModel, get_sentencetransformer
-
-# ... (existing imports)
-
-def filter_results(query: str, results: list[dict], embedding_model: EmbeddingModel, threshold: float = 0.5) -> list[dict]:
-    query_embedding = embedding_model.embed_text(query)
-    filtered_results = []
-    for result in results:
-        doc_embedding = embedding_model.embed_text(result['document'])
-        similarity = embedding_model.calculate_similarity(query_embedding, doc_embedding)
-        if similarity >= threshold:
-            filtered_results.append(result)
-    return filtered_results
-
-@click.command(help="Ask a question using the RAG system.")
-# ... (existing options)
-@click.option("--similarity-threshold", default=0.5, help="Similarity threshold for filtering results", show_default=True)
-@click.pass_context
-def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
-    # ... (existing code)
-
-    while True:
-        query = click.prompt(
-            "".join(
-                [
-                    click.style("Enter your question ", fg=config["colors"]["question_text"]),
-                    click.style("(or 'exit' to quit)", fg="white"),
-                ]
-            )
-        )
-        if query.lower() == "exit":
-            break
-
-        query_embedding = embedding_model.embed_text(query)
-        results = vector_store.query(query_embedding, n_results=options["n_results"])
-        
-        # Apply semantic similarity filtering
-        filtered_results = filter_results(query, results, embedding_model, options["similarity_threshold"])
-        
-        if not filtered_results:
-            click.secho("No relevant documents found. Try rephrasing your question.", fg="yellow")
-            continue
-
-        print([f["metadata"]["filename"] for f in filtered_results])
-        
-        context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in filtered_results])
-        conversation_history = conversation_memory.get_relevant_history(query, embedding_model)
-
-        # ... (rest of the existing code)
-        2.
-Re-ranking:
-Implement a re-ranking step that uses a more sophisticated model to score the relevance of the retrieved documents.
-3.
-Query Expansion:
-Expand the original query with related terms to improve the retrieval of relevant documents.
-4.
-Hybrid Search:
-Combine vector search with keyword-based search for better results.
-
-"""
