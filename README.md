@@ -3,7 +3,7 @@
 > [!NOTE]
 > This README.md has been (mostly) written by the LLM it self. That's why it is bragging!!
 
-![image](./img/processchart.png "Process flow")
+![image](./img/processchart_new.png "Process flow")
 
 ## Overview
 

@@ -1,9 +1,9 @@
 """Reranking of documents based on a given query using the cross-encoder model."""
 
 from dataclasses import dataclass, field
+from typing import TypedDict
 
 from sentence_transformers import CrossEncoder
-from typing import TypedDict
 
 
 class Document(TypedDict):
