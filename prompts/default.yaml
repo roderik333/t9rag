@@ -24,7 +24,8 @@ ask:
   rerank_documents: true
   reranker_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
   rerank_top_k: 10
-  colors:
+
+colors:
   question_text: "green"
   answer_text: "blue"
 
