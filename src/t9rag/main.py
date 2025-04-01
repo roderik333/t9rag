@@ -107,7 +107,6 @@ class ConversationMemory:
     def get_relevant_history(self, current_query: str, embedding_model: EmbeddingModel) -> str:
         if not self.memory:
             return ""
-
         current_embedding = embedding_model.embed_text(current_query)
 
         # Calculate similarity scores

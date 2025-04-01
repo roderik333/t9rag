@@ -6,6 +6,7 @@ from typing import TypedDict
 from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
 from chromadb.api.types import Embedding, Metadata
+from chromadb.utils import batch_utils
 
 
 class DocumentDict(TypedDict):
@@ -29,13 +30,8 @@ class VectorStore:
         embeddings: list[Embedding] = [doc["embedding"] for doc in documents]
         metadata: list[Metadata] = [doc["metadata"] for doc in documents]
         texts = [doc["content"] for doc in documents]
-
-        self.collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            metadatas=metadata,
-            documents=texts,
-        )
+        _collection = batch_utils.create_batches(self.client, ids, embeddings, metadata, texts)
+        [self.collection.add(*col) for col in _collection]
 
     def query(self, query_embedding: Embedding, n_results: int = 3) -> list[dict]:
         results = self.collection.query(query_embeddings=[query_embedding], n_results=n_results)

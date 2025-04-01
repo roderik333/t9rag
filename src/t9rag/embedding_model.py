@@ -1,6 +1,7 @@
 """Our embed."""
 
 from dataclasses import dataclass
+from typing import reveal_type
 
 import numpy as np
 import torch
@@ -9,10 +10,11 @@ from sentence_transformers import SentenceTransformer, models
 
 
 def get_sentencetransformer(model_name: str) -> SentenceTransformer:
-    word_embedding_model = models.Transformer(model_name)
-    pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+    sentence_embedding_model = SentenceTransformer(model_name)  # type: ignore[arg-type]
+    pooling_model = models.Pooling(sentence_embedding_model.get_sentence_embedding_dimension())
+
     return SentenceTransformer(
-        modules=[word_embedding_model, pooling_model], device="cuda" if torch.cuda.is_available() else "cpu"
+        modules=[sentence_embedding_model, pooling_model], device="cuda" if torch.cuda.is_available() else "cpu"
     )
 
 
