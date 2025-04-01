@@ -23,28 +23,36 @@ def chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
     return chunks
 
 
+def read_file(filepath: str) -> str:
+    suffix = Path(filepath).suffix.lower()
+
+    match suffix:
+        case ".txt":
+            with open(filepath, "r", encoding="utf-8") as file:
+                return file.read()
+        case ".csv":
+            df = pd.read_csv(filepath)
+            return df.to_string()
+        case ".odt":
+            doc = load_odt(filepath)
+            return teletype.extractText(doc.getElementsByType(text.P))
+        case ".pdf":
+            reader = PdfReader(filepath)
+            return "".join(page.extract_text() for page in reader.pages)
+        case ".docx":
+            doc = Document(filepath)
+            return "\n".join([para.text for para in doc.paragraphs])
+        case _:
+            raise ValueError(f"Unsupported file format: {filepath}")
+
+
 def load_documents(directory: Path, chunk_size: int, chunk_overlap: int) -> list[DocumentDict]:
     documents = []
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
-        if filename.endswith(".txt"):
-            with open(filepath, "r", encoding="utf-8") as file:
-                content = file.read()
-        elif filename.endswith(".csv"):
-            df = pd.read_csv(filepath)
-            content = df.to_string()
-        elif filename.endswith(".docx"):
-            doc = Document(filepath)
-            content = "\n".join([para.text for para in doc.paragraphs])
-        elif filename.endswith(".odt"):
-            doc = load_odt(filepath)
-            content = teletype.extractText(doc.getElementsByType(text.P))
-        elif filename.endswith(".pdf"):
-            reader = PdfReader(filepath)
-            content = ""
-            for page in reader.pages:
-                content += page.extract_text()
-        else:
+        try:
+            content = read_file(filepath)
+        except ValueError:
             continue  # Skip unsupported file types
 
         chunks = chunk_text(content, chunk_size, chunk_overlap)
@@ -59,6 +67,4 @@ def load_documents(directory: Path, chunk_size: int, chunk_overlap: int) -> list
                     },
                 }
             )
-        # documents.append({"filename": filename, "content": content})
-
     return documents
