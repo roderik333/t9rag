@@ -1,5 +1,6 @@
 """Our Vector store."""
 
+import logging
 from dataclasses import dataclass, field
 from typing import TypedDict
 
@@ -7,6 +8,8 @@ from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
 from chromadb.api.types import Embedding, Metadata
 from chromadb.utils import batch_utils
+
+logger = logging.getLogger("ragtime")
 
 
 class DocumentDict(TypedDict):
@@ -31,6 +34,7 @@ class VectorStore:
         metadata: list[Metadata] = [doc["metadata"] for doc in documents]
         texts = [doc["content"] for doc in documents]
         _collection = batch_utils.create_batches(self.client, ids, embeddings, metadata, texts)
+        logger.debug(f"Added {len(_collection)} document chunks to vector store")
         [self.collection.add(*col) for col in _collection]
 
     def query(self, query_embedding: Embedding, n_results: int = 3) -> list[dict]:

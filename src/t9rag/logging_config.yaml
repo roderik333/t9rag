@@ -1,0 +1,68 @@
+version: 1
+disable_existing_loggers: True
+formatters:
+  standard:
+    format: "%(asctime)s [%(levelname)s] %(name)s.%(funcName)s - %(message)s"
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: standard
+    filename: ragtime.log
+  email:
+    class: logging.handlers.SMTPHandler
+    level: ERROR
+    mailhost: ["localhost", 25]
+    fromaddr: "noreply-ragtimel@westum.no"
+    toaddrs: ["rune.steinnes@renroros.no"]
+    subject: "A message from ragtime"
+loggers:
+  main:
+    level: INFO
+    handlers: [file]
+    propagate: no
+  ragtime:
+    level: DEBUG
+    handlers: [file]
+    propagate: no
+  parso:
+    # Remove DEBUG messages originating from parso
+    handlers: [file]
+    level: WARNING
+  urllib3:
+    # Remove DEBUG messages originating from requests
+    handlers: [file]
+    level: WARNING
+  smbprotocol:
+    # Supress smbprotocol debug info.
+    handlers: [file, console]
+    level: WARNING
+  smbclient:
+    # Supress smbclient debug info.
+    handlers: [file, console]
+    level: WARNING
+  paramiko:
+    # Supress paramiko debug info.
+    handlers: [file, console]
+    level: WARNING
+  spnego:
+    # Supress SPNEGO debug info.
+    handlers: [file, console]
+    level: WARNING
+  chardet:
+    # Supress Chardet messages
+    handlers: [file, console]
+    level: WARNING
+  httpcore:
+    # Supress httpcore messages
+    handlers: [file, console]
+    level: WARNING
+root:
+  level: DEBUG
+  handlers: [console, file]
+  propagate: True

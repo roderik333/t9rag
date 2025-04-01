@@ -1,9 +1,12 @@
 """Reranking of documents based on a given query using the cross-encoder model."""
 
+import logging
 from dataclasses import dataclass, field
 from typing import TypedDict
 
 from sentence_transformers import CrossEncoder
+
+logger = logging.getLogger("ragtime")
 
 
 class Document(TypedDict):
@@ -27,5 +30,6 @@ class Reranker:
         scored_docs = list(zip(scores, documents, strict=True))
         # Sort by score in descending order and take top_k
         reranked = sorted(scored_docs, key=lambda x: x[0], reverse=True)[:top_k]
+        logger.debug(f"Reranked documents: {reranked}")
         # Return only the documents, discarding the scores
         return [doc for _, doc in reranked]

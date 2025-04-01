@@ -2,6 +2,7 @@
 
 import sys
 from dataclasses import dataclass, field
+from logging import config as logging_config
 from pathlib import Path
 from typing import Any, TypedDict, TypeVar, Unpack, cast
 
@@ -16,6 +17,11 @@ from .ollama_llm import initialize_llm, stream_complete
 from .reranker import Document as FilteredDocument
 from .reranker import Reranker
 from .vector_store import DocumentDict, VectorStore
+
+BASEDIR = Path(__file__).parent.resolve()
+
+with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
+    logging_config.dictConfig(yaml.safe_load(cnf))
 
 
 class ReadDocumentsOptions(TypedDict):
