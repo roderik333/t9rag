@@ -1,7 +1,6 @@
 """Our embed."""
 
 from dataclasses import dataclass
-from typing import reveal_type
 
 import numpy as np
 import torch
@@ -10,6 +9,19 @@ from sentence_transformers import SentenceTransformer, models
 
 
 def get_sentencetransformer(model_name: str) -> SentenceTransformer:
+    """Create and retreive a SentenceTransformer.
+
+    NOTE: the sentence transformer startet out as a
+    `models.Transformer`.`get_word_embedding_dimension`
+    This worked, for the most part. However it broke when using the
+    `sentence-transformers/average_word_embeddings_komninos` model.
+
+    I do not know why, but it will at some point have to be investigated.
+
+    Using the `sentence_transformers.SentenceTransformer`.`get_sentence_embedding_dimension`
+    seems to be functional with all the models I've tried thus far.
+
+    """
     sentence_embedding_model = SentenceTransformer(model_name)  # type: ignore[arg-type]
     pooling_model = models.Pooling(sentence_embedding_model.get_sentence_embedding_dimension())
 
