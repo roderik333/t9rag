@@ -2,7 +2,6 @@
 
 import sys
 from dataclasses import dataclass, field
-from logging import config as logging_config
 from pathlib import Path
 from typing import Any, TypedDict, TypeVar, Unpack, cast
 
@@ -141,8 +140,6 @@ class ConversationMemory:
 @click.option("--chunk-overlap", default=20, help="Overlap between chunks", show_default=True)
 @click.pass_context
 def read_documents(ctx: click.Context, **options: Unpack[ReadDocumentsOptions]):
-    with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
-        logging_config.dictConfig(yaml.safe_load(cnf))
     if options.get("config"):
         # If config is passed in, the values in config take precedence over CLI options
         # unless an option is explicitly provided
@@ -207,8 +204,6 @@ def read_documents(ctx: click.Context, **options: Unpack[ReadDocumentsOptions]):
 @click.option("--rerank-top-k", default=10, help="Number of top-k results to rerank", show_default=True)
 @click.pass_context
 def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
-    with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
-        logging_config.dictConfig(yaml.safe_load(cnf))
     if options.get("config"):
         # If config is passed in, the values in config take precedence over CLI options
         # unless an option is explicitly provided
