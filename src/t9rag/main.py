@@ -20,9 +20,6 @@ from .vector_store import DocumentDict, VectorStore
 
 BASEDIR = Path(__file__).parent.resolve()
 
-with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
-    logging_config.dictConfig(yaml.safe_load(cnf))
-
 
 class ReadDocumentsOptions(TypedDict):
     config: str
@@ -144,6 +141,8 @@ class ConversationMemory:
 @click.option("--chunk-overlap", default=20, help="Overlap between chunks", show_default=True)
 @click.pass_context
 def read_documents(ctx: click.Context, **options: Unpack[ReadDocumentsOptions]):
+    with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
+        logging_config.dictConfig(yaml.safe_load(cnf))
     if options.get("config"):
         # If config is passed in, the values in config take precedence over CLI options
         # unless an option is explicitly provided
@@ -208,6 +207,8 @@ def read_documents(ctx: click.Context, **options: Unpack[ReadDocumentsOptions]):
 @click.option("--rerank-top-k", default=10, help="Number of top-k results to rerank", show_default=True)
 @click.pass_context
 def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
+    with open(Path(BASEDIR / "logging_config.yaml"), "r") as cnf:
+        logging_config.dictConfig(yaml.safe_load(cnf))
     if options.get("config"):
         # If config is passed in, the values in config take precedence over CLI options
         # unless an option is explicitly provided
@@ -256,11 +257,14 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
 
         query_embedding = embedding_model.embed_text(query)
         results = vector_store.query(query_embedding, n_results=options["n_results"])
-
         if options["filter_similarities"]:
             results = filter_results(query, results, embedding_model, options["similarity_threshold"])
-
-        if reranker:
+            if not results:
+                click.secho(
+                    "No relevant documents found after filtering. You might want to adjust the threshold.", fg="red"
+                )
+                continue
+        if results and reranker:
             results = reranker.rerank(query, cast("list[FilteredDocument]", results), top_k=options["rerank_top_k"])
 
         if not results or results[0]["document"] == "None":
@@ -273,7 +277,6 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
                 for r in results
             ]
         )
-        # context = "\n\n".join([f"Document: {r['metadata']['filename']}\n{r['document']}" for r in results])
         conversation_history = conversation_memory.get_relevant_history(query, embedding_model)
 
         prompt_template = get_prompt(options["prompt"], config or {})

@@ -32,7 +32,11 @@ def read_file(filepath: str) -> str:
                 return file.read()
         case ".csv":
             df = pd.read_csv(filepath)
-            return df.to_string()
+            rows = []
+            for _, row in df.iterrows():
+                row_str = ", ".join(f"{col}: {val}" for col, val in row.items())
+                rows.append(row_str)
+            return "\n".join(rows)
         case ".odt":
             doc = load_odt(filepath)
             return teletype.extractText(doc.getElementsByType(text.P))
