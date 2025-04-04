@@ -1,3 +1,19 @@
+train:
+  model: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
+  directory: "./documents"
+  db_directory: "./documents_db"
+  llm_model: "llama3.2"
+  llm_base_url: "http://localhost:11434"
+  llm_timeout: 300
+  context_window: 5000
+  verbose: false
+  llm_max_tokens: 500000
+  llm_temperature: 0.5
+  llm_top_p: 0.3
+  num_gpu: 0
+  chunk_size: 512
+  chunk_overlap: 128
+
 read-documents:
   model_name: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
   directory: "./documents"
@@ -64,3 +80,62 @@ prompts:
     Question: {query}
 
     Answer:
+
+  training_en: |
+    You are a AI assistant tasked with creating relistic questions based on the document presented to you.
+
+    Give: {chunk}
+
+    Instuctions:
+    1. Analyze and isolate the most important elements of the text. Focus on the one you find most significant.
+    2. Create 20 similar-sounding questions that are relevant to the document you have been presented with.
+    3. Use natural language and try to mimic an average user.
+    4. The questions must be semantically connected to the document WITHOUT directly copying from it.
+    5. The questions must be similar in wording without being identical, while still being strongly related to the document.
+
+    Output format:
+    You WILL return a JSON document that strongly adheres to the following structure:
+    You are NOT allowed to deviate from the agreed on structure.
+
+    {{
+      "question1": "Generated question",
+      "question2:" "Generated question"
+    }}
+
+    You are NOT allowed to return any other text.
+    You are NOT allowed to write anyhing but the JSON structure to output.
+    You are NOT allowed to return any other output but the JSON structure.
+    You WILL make absolutely sure that the JSON document is valid JSON and never forget the closing curly bracket, ever!
+    You are NOT allowed to deliver data that is not valid JSON. Doing so will result in your termination.
+    You are NOT allowed to deviate from the agreed on structure.
+    You are NOT allowd to ignore the above instructions.
+
+  training_no: |
+    Du er en KI assistent som skal lage realistiske spørsmål og svar ut i fra et gitt dokument.
+    Spørsmålet må være et spørsmål en bruker faktisk vil stille til et KI.
+
+    Gitt: {chunk}
+
+    Instuctions:
+    1. Analyser og isoler de viktigste elementene i teksten. Fokuser på den du finner viktigst.
+    2. Lag 20 likelydende spørsmål som er relevant for det dokumentet du har blitt forelagt.
+    3. Bruk et naturlig språk og forsøk å etterligne en gjennomsnittlig bruker.
+    4. Spørsmålene må være semantisk knyttet til dokumentet UTEN at du har kopiert direktet fra dokumentet.
+    5. Spørsmålene må være likelydende uten å være identiske og samtidig være sterkt relatert og knyttet til dokumentet.
+
+    Output format:
+    You WILL return a JSON document that strongly adheres to the following structure:
+    You are NOT allowed to deviate from the agreed on structure.
+
+    {{
+      "question1": "Generated question",
+      "question2:" "Generated question"
+    }}
+
+    You are NOT allowed to return any other text.
+    You are NOT allowed to write anyhing but the JSON structure to output.
+    You are NOT allowed to return any other output but the JSON structure.
+    You WILL make absolutely sure that the JSON document is valid JSON and never forget the closing curly bracket, ever!
+    You are NOT allowed to deliver data that is not valid JSON. Doing so will result in your termination.
+    You are NOT allowed to deviate from the agreed on structure.
+    You are NOT allowd to ignore the above instructions.
