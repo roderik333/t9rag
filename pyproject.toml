@@ -38,6 +38,7 @@ dependencies = [
     "llama-index-embeddings-huggingface",
     "llama-index-llms-huggingface-api",
     "pynvml",
+    "streamlit",
 ]
 [tool.setuptool]
 packages = ["t9rag"]
@@ -70,7 +71,7 @@ Source = "https://github.com/roderik333/t9rag"
 
 [project.scripts]
 rag = "t9rag.main:cli"
-
+streamlit-rag = "t9rag.streamlit_run:main"
 
 [tool.ruff]
 extend-select = ["A", "B", "C4", "D", "I", "ERA", "PLR", "SIM", "TCH"]
