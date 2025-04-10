@@ -74,14 +74,14 @@ class AskOptions(TypedDict):
 OptionsType = TypeVar("OptionsType", bound=AskOptions | ReadDocumentsOptions | ProcessDocumentsOptions)
 
 
-def load_config(config_file: str) -> dict[str, Any]:
+def load_config(config_file: Path) -> dict[str, Any]:
     with open(config_file, "r") as f:
         return yaml.safe_load(f)
 
 
 def read_config(ctx: click.Context, options: OptionsType, section: str) -> tuple[dict[str, Any], OptionsType]:
     ctx_dict = {item.name: item.default for item in ctx.command.params}
-    config = load_config(options["config"])
+    config = load_config(Path(options["config"]))
     ask_config = config.get(section, {})
     for key, value in ask_config.items():
         default_value = ctx_dict.get(key)

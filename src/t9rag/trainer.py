@@ -12,6 +12,7 @@ from llama_index.llms.ollama import Ollama
 from .document_reader import load_documents
 
 BASEDIR = Path(__file__).parent.parent.parent.resolve()
+BREAK_AT = 100
 
 
 def coerce_json(data: str) -> dict[str, str] | None:
@@ -21,9 +22,10 @@ def coerce_json(data: str) -> dict[str, str] | None:
 
     if doc is None:
         # try to coerce data to JSON by checking for missing } in string
-        if "}" not in data:
-            data = f"{data}}}"
-        doc = json.loads(data)
+        with suppress(JSONDecodeError):
+            if "}" not in data:
+                data = f"{data}}}"
+            doc = json.loads(data)
 
     return doc
 
@@ -47,9 +49,9 @@ def process_documents_with_questions(
             for key in questions:
                 processed_documents.append({key: questions[key], "chunk": doc["content"]})
                 num += 1
-        if num == 100:
+        if num == BREAK_AT:
             break
 
     with open(BASEDIR / "training.json", "w") as fp:
         fp.write(json.dumps(processed_documents))
-        click.secho(f"Dumped {num} trainingdata for {num / 20} content chunks")
+        click.secho(f"Dumped {num} trainingdata for {num} content chunks")
