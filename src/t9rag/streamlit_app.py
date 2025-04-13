@@ -8,6 +8,7 @@ from typing import Any, cast
 import chromadb
 import streamlit as st
 
+from .__version__ import __version__
 from .embedding_model import EmbeddingModel, get_sentencetransformer
 from .main import AskOptions, ConversationMemory, filter_results, get_prompt, load_config, read_documents
 from .ollama_llm import initialize_llm, stream_complete
@@ -74,8 +75,12 @@ def setup_sidebar():
                 st.error(f"Error reading documents: {str(e)}")
 
 
+def add_to_chat_history(hist: dict, index: int):
+    st.session_state.messages[index].append(hist)
+
+
 def display_chat_history():
-    for message in reversed(st.session_state.messages):
+    for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
@@ -91,7 +96,7 @@ def stream_response(llm, prompt):
     return full_response
 
 
-def process_user_input(question: str) -> None:
+def process_user_input(question: str) -> str | None:
     try:
         embedding_model = EmbeddingModel(model=get_sentencetransformer(st.session_state.options["model"]))
         vector_store = VectorStore(client=chromadb.PersistentClient(path=st.session_state.options["db_directory"]))
@@ -150,7 +155,6 @@ def process_user_input(question: str) -> None:
         full_response = stream_response(llm, prompt)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         conversation_memory.add_turn(question, full_response)
-
     except Exception as e:
         st.error(f"Error processing query {str(e)}")
 
@@ -173,19 +177,17 @@ def get_query_results(question, embedding_model, vector_store, reranker):
 
 
 def main():
-    st.title("T9RAG")
+    st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+
+    st.title(f"T9RAG - {__version__}")
 
     setup_sidebar()
-
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    st.header("Ask a Question")
-    with st.form(key="question_form", clear_on_submit=True):
-        question = st.text_input("Enter your question", key="question_input")
-        submit_button = st.form_submit_button(label="Ask")
+    question = st.chat_input("Enter your question")  # , key="question_input")
 
-    if submit_button and question and st.session_state.config and st.session_state.options:
+    if question and st.session_state.config and st.session_state.options:
         st.session_state.messages.append({"role": "user", "content": question})
         display_chat_history()
         process_user_input(question)
