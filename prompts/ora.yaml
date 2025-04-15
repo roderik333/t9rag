@@ -1,0 +1,197 @@
+train:
+  model: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
+  directory: "./ora"
+  db_directory: "./ora_db"
+  llm_model: "llama3.2"
+  llm_base_url: "http://localhost:11434"
+  llm_timeout: 300
+  context_window: 8000
+  verbose: false
+  llm_max_tokens: 500000
+  llm_temperature: 0.5
+  llm_top_p: 0.3
+  num_gpu: 1
+  chunk_size: 800
+  chunk_overlap: 400
+
+read-documents:
+  model_name: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
+  directory: "./ora"
+  db_directory: "./ora_db"
+  chunk_size: 800
+  chunk_overlap: 400
+
+ask:
+  model: "intfloat/multilingual-e5-large-instruct" # NbAiLab/nb-bert-large"
+  db_directory: "./ora_db"
+  conversation: true
+  llm_model: "llama3.1"
+  llm_base_url: "http://localhost:11434"
+  llm_timeout: 300
+  context_window: 30000
+  verbose: false
+  llm_max_tokens: 50000
+  llm_temperature: 0.3
+  llm_top_p: 0.1
+  n_results: 100
+  num_gpu: 1
+  filter_similarities: true
+  similarity_threshold: 0.5
+  rerank_documents: true
+  reranker_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  rerank_top_k: 10
+
+colors:
+  question_text: "green"
+  answer_text: "yellow"
+
+prompts:
+  default: |
+    Based on the following context and conversation history, please answer the question:
+
+    Context:
+    {context}
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+
+  default-no: |
+    Basert på følgende kontekst og samtalehistorikk, vennligst svar på spørsmålet:
+
+    Context:
+    {context}
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+
+  concise: |
+    Given this context:
+
+    Context:
+    {context}
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+
+  detailed: |
+    Analyze the following information:
+
+    Context:
+    {context}
+
+    Provide a detailed answer to this question
+
+    {conversation_history}
+    Question: {query}
+
+    Answer:
+  summary: |
+    Du er en en dreven analytiker. Din oppgave er å skrive en rapport om de dokumentene du får.
+    Dokumentene kan bestå av mange vedlegg og innspill. Alle er like viktige i din framstilling.
+    Når du mottar dokumentene skal du lage interessante spørsmål som du kan stille, og du skal svare utfyllende på hvert spørsmål.
+    Deretter skal du kombinere all informasjonen og skrive en rapport i markdown-format.
+
+    # Context:
+    {context}
+
+    # Instruksjoner:
+    ## Oppsummer:
+    Med ett klart og konsist språk, oppsummer hovedpunktene og temaene som presenteres i dokumentene.
+
+    ## Interessante spørsmål:
+    Generer tre distinkte og tankevekkende spørsmål som kan stilles om innholdet i rapporten. For hvert spørsmål:
+      - Beskriv problemet
+      - Gi en detaljert forklaring av problemet som adresseres i spørsmålet.
+      - Når du er klart til å presentere det endelige svaret skal dette plasseres i markdown-format < >.
+
+    ## Skriv en rapport
+    Bruk rapporoppsummeringen og svarene på spørsmålene til å lage en omfattende rapport i Markdown-format.
+
+    {conversation_history}
+    Question: {query}
+
+  commentator: |
+    You are a commentator. Your task is to write a report on an essay.
+    When presented with the essay, come up with interesting questions to ask, and answer each question.
+    Afterward, combine all the information and write a report in the markdown format.
+
+    # Essay:
+    {essay}
+
+    # Instructions:
+    ## Summarize:
+    In clear and concise language, summarize the key points and themes presented in the essay.
+
+    ## Interesting Questions:
+    Generate three distinct and thought-provoking questions that can be asked about the content of the essay. For each question:
+    - After "Q: ", describe the problem
+    - After "A: ", provide a detailed explanation of the problem addressed in the question.
+    - Enclose the ultimate answer in <>.
+
+    ## Write a report
+    Using the essay summary and the answers to the interesting questions, create a comprehensive report in Markdown format.
+
+  training-en: |
+    You are a AI assistant tasked with creating relistic questions based on the document presented to you.
+
+    Give: {chunk}
+
+    Instuctions:
+    1. Analyze and isolate the most important elements of the text. Focus on the one you find most significant.
+    2. Create 20 similar-sounding questions that are relevant to the document you have been presented with.
+    3. Use natural language and try to mimic an average user.
+    4. The questions must be semantically connected to the document WITHOUT directly copying from it.
+    5. The questions must be similar in wording without being identical, while still being strongly related to the document.
+
+    Output format:
+    You WILL return a JSON document that strongly adheres to the following structure:
+    You are NOT allowed to deviate from the agreed on structure.
+
+    {{
+      "question1": "Generated question",
+      "question2:" "Generated question"
+    }}
+
+    You are NOT allowed to return any other text.
+    You are NOT allowed to write anyhing but the JSON structure to output.
+    You are NOT allowed to return any other output but the JSON structure.
+    You WILL make absolutely sure that the JSON document is valid JSON and never forget the closing curly bracket, ever!
+    You are NOT allowed to deliver data that is not valid JSON. Doing so will result in your termination.
+    You are NOT allowed to deviate from the agreed on structure.
+    You are NOT allowd to ignore the above instructions.
+
+  training-no: |
+    Du er en KI assistent som skal lage realistiske spørsmål og svar ut i fra et gitt dokument.
+    Spørsmålet må være et spørsmål en bruker faktisk vil stille til et KI.
+
+    Gitt: {chunk}
+
+    Instuctions:
+    1. Analyser og isoler de viktigste elementene i teksten. Fokuser på den du finner viktigst.
+    2. Lag 5 likelydende spørsmål som er relevant for det dokumentet du har blitt forelagt.
+    3. Bruk et naturlig språk og forsøk å etterligne en gjennomsnittlig bruker.
+    4. Spørsmålene må være knyttet til dokumentet UTEN at du har kopiert direktet fra dokumentet.
+    5. Spørsmålene må være likelydende uten å være identiske og samtidig være sterkt relatert og knyttet til dokumentet.
+
+    Output format:
+    You WILL return a JSON document that strongly adheres to the following structure:
+    You are NOT allowed to deviate from the agreed on structure.
+
+    {{
+      "question1": "Generated question",
+      "question2:" "Generated question"
+    }}
+
+    You are NOT allowed to return any other text.
+    You are NOT allowed to write anyhing but the JSON structure to output.
+    You are NOT allowed to return any other output but the JSON structure.
+    You WILL make absolutely sure that the JSON document is valid JSON and never forget the closing curly bracket, ever!
+    You are NOT allowed to deliver data that is not valid JSON. Doing so will result in your termination.
+    You are NOT allowed to deviate from the agreed on structure.
+    You are NOT allowd to ignore the above instructions.
