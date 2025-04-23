@@ -39,6 +39,7 @@ dependencies = [
     "llama-index-llms-huggingface-api",
     "pynvml",
     "streamlit",
+    "mistralai"
 ]
 [tool.setuptool]
 packages = ["t9rag"]

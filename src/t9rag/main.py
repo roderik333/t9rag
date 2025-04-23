@@ -12,6 +12,7 @@ import yaml
 from .__version__ import __version__
 from .document_reader import load_documents
 from .embedding_model import EmbeddingModel, get_sentencetransformer
+from .mistral_llm import initialize_mistral_llm, mistral_stream_complete
 from .ollama_llm import initialize_llm, stream_complete
 from .reranker import Document as FilteredDocument
 from .reranker import Reranker
@@ -71,7 +72,32 @@ class AskOptions(TypedDict):
     rerank_top_k: int
 
 
-OptionsType = TypeVar("OptionsType", bound=AskOptions | ReadDocumentsOptions | ProcessDocumentsOptions)
+class AskMistralOptions(TypedDict):
+    config: str
+    model: str
+    api_key: str
+    conversation: bool
+    db_directory: str
+    llm_model: str
+    llm_timeout: int
+    context_window: int
+    verbose: bool
+    llm_max_tokens: int
+    llm_temperature: float
+    llm_top_p: int
+    n_results: int
+    prompt: str
+    num_gpu: int
+    filter_similarities: bool
+    similarity_threshold: float
+    rerank_documents: bool
+    reranker_model: str
+    rerank_top_k: int
+
+
+OptionsType = TypeVar(
+    "OptionsType", bound=AskOptions | AskMistralOptions | ReadDocumentsOptions | ProcessDocumentsOptions
+)
 
 
 def load_config(config_file: Path) -> dict[str, Any]:
@@ -314,7 +340,6 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
     llm = initialize_llm(
         **_llm_options,  # type: ignore[arg-type]
     )
-
     if llm is None:
         click.secho("Failed to initialize Ollama LLM", fg="red")
         return
@@ -376,6 +401,136 @@ def ask(ctx: click.Context, **options: Unpack[AskOptions]) -> None:
         conversation_memory.add_turn(query, answer)
 
 
+@click.command(help="Ask a question using the Misral RAG system.")
+@click.option(
+    "--config",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help="Path to the configuration file.",
+)
+@click.option(
+    "--prompt",
+    default="default",
+    help="The key to the prompt value stored in the configuration file",
+    show_default=True,
+)
+@click.option("--conversation", is_flag=True, help="Enable conversation mode", show_default=True)
+@click.option("--model", default="NbAiLab/nb-bert-large", help="Name of the HuggingFace model", show_default=True)
+@click.option(
+    "--db-directory", default="./chroma_db", help="Directory where the vector database is stored", show_default=True
+)
+@click.option("--llm-model", default="llama3.2", help="Name of the Ollama LLM model", show_default=True)
+@click.option("--llm-timeout", default=600, help="Timeout for the Mistral request", show_default=True)
+@click.option("--context-window", default=4096, help="Context window size", show_default=True)
+@click.option("--verbose", is_flag=True, help="Enable verbose output", show_default=True)
+@click.option("--llm-max-tokens", default=1024, help="Maximum number of tokens", show_default=True)
+@click.option("--llm-temperature", default=0.3, help="Temperature", show_default=True)
+@click.option("--llm-top-p", default=0.5, help="Top-p", show_default=True)
+@click.option(
+    "--n-results", default=5, help="When querying the vector store, how many of results to return", show_default=True
+)
+@click.option("--num-gpu", default=0, help="Number of GPUs to use for Ollama LLM", show_default=True)
+@click.option("--filter-similarities", is_flag=True, help="Enable filtering similarities", show_default=True)
+@click.option(
+    "--similarity-threshold", default=0.5, help="Similarity threshold for filtering results", show_default=True
+)
+@click.option("--rerank-documents", is_flag=True, help="Enable re-ranking documents", show_default=True)
+@click.option(
+    "--reranker-model",
+    default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+    help="Name of the reranker model",
+    show_default=True,
+)
+@click.option("--rerank-top-k", default=10, help="Number of top-k results to rerank", show_default=True)
+@click.pass_context
+def askmistral(ctx: click.Context, **options: Unpack[AskMistralOptions]) -> None:
+    if options.get("config"):
+        # If config is passed in, the values in config take precedence over CLI options
+        # unless an option is explicitly provided
+        # NOTE TO SELF: config contains the complete configuration while options contains only the asked-specific options.
+        config, options = read_config(ctx, options, "ask")
+    else:
+        config = {"prompts": {}}
+    embedding_model = EmbeddingModel(model=get_sentencetransformer(options["model"]))
+    vector_store = VectorStore(client=chromadb.PersistentClient(path=options["db_directory"]))
+    reranker = False
+    if options["rerank_documents"]:
+        reranker = Reranker(model_name=options["reranker_model"])
+
+    _llm_options = {
+        "model_name": options["llm_model"],
+        "api_key": options["api_key"],
+        "timeout": options["llm_timeout"],
+        "context_window": options["context_window"],
+        "verbose": options["verbose"],
+        "max_tokens": options["llm_max_tokens"],
+        "temperature": options["llm_temperature"],
+        "top_p": options["llm_top_p"],
+        "num_gpu": options["num_gpu"],
+    }
+    llm = initialize_mistral_llm(
+        **_llm_options,  # type: ignore[arg-type]
+    )
+    if llm is None:
+        click.secho("Failed to initialize Ollama LLM", fg="red")
+        return
+
+    conversation_memory = ConversationMemory()
+
+    while True:
+        query = click.prompt(
+            "".join(
+                [
+                    click.style("Enter your question ", fg=config["colors"]["question_text"]),
+                    click.style("(or 'exit' to quit)", fg="white"),
+                ]
+            )
+        )
+        if query.lower() == "exit":
+            break
+
+        query_embedding = embedding_model.embed_text(query)
+        results = vector_store.query(query_embedding, n_results=options["n_results"])
+        if options["filter_similarities"]:
+            results = filter_results(query, results, embedding_model, options["similarity_threshold"])
+            if not results:
+                click.secho(
+                    "No relevant documents found after filtering. You might want to adjust the threshold.", fg="red"
+                )
+                continue
+        if results and reranker:
+            results = reranker.rerank(query, cast("list[FilteredDocument]", results), top_k=options["rerank_top_k"])
+
+        if not results or results[0]["document"] == "None":
+            click.secho("No relevant documents found. Try rephrasing your question.", fg="yellow")
+            continue
+
+        context = "\n\n".join(
+            [
+                f"Document: {r['metadata']['original_file']} (Chunk {r['metadata']['chunk_index']})\n{r['document']}"
+                for r in results
+            ]
+        )
+        conversation_history = conversation_memory.get_relevant_history(query, embedding_model)
+
+        prompt_template = get_prompt(options["prompt"], config or {})
+        prompt = prompt_template.format(context=context, conversation_history=conversation_history, query=query)
+
+        click.secho("Answer: ", fg=config["colors"]["answer_text"], nl=False)
+
+        answer = ""
+        for chunk in mistral_stream_complete(llm, prompt):
+            click.secho(chunk, fg=config["colors"]["answer_text"], nl=False)
+            sys.stdout.flush()
+            answer += chunk
+        click.echo()
+
+        # break out unless a conversation is requested
+        if not options["conversation"]:
+            break
+
+        conversation_memory.add_turn(query, answer)
+
+
 @click.command(help="Show version")
 def version() -> None:
     click.secho(f"t9 RAG CLI v{__version__}", fg="green")
@@ -390,3 +545,4 @@ cli.add_command(process_documents, "train")
 cli.add_command(version)
 cli.add_command(read_documents)
 cli.add_command(ask)
+cli.add_command(askmistral)
