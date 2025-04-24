@@ -132,7 +132,6 @@ def stream_response(llm, prompt):
         message_placeholder = st.empty()
         full_response = ""
         for chunk in mistral_stream_complete(llm, prompt):
-            print(chunk)
             full_response += chunk
             message_placeholder.markdown(full_response + "▌")
         message_placeholder.markdown(full_response)
@@ -150,11 +149,10 @@ def process_user_input(question: str) -> str | None:
                 if st.session_state.options["rerank_documents"]
                 else False
             )
-
             _llm_options = {
                 "model_name": st.session_state.options["llm_model"],
+                "api_key": st.session_state.options["api_key"],
                 "timeout": st.session_state.options["llm_timeout"],
-                "base_url": st.session_state.options["llm_base_url"],
                 "context_window": st.session_state.options["context_window"],
                 "verbose": st.session_state.options["verbose"],
                 "max_tokens": st.session_state.options["llm_max_tokens"],
